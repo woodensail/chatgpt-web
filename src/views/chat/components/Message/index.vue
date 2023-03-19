@@ -19,6 +19,7 @@ interface Props {
 interface Emit {
   (ev: 'regenerate'): void
   (ev: 'delete'): void
+  (ev: 'speak'): void
 }
 
 const props = defineProps<Props>()
@@ -84,15 +85,22 @@ function handleRegenerate() {
           <button
             v-if="!inversion"
             class="mb-2 transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-300"
-            @click="handleRegenerate"
+            @click="emit('speak')"
           >
-            <SvgIcon icon="ri:restart-line" />
+            <SvgIcon icon="ph:speaker-high-bold" />
           </button>
-          <NDropdown :placement="!inversion ? 'right' : 'left'" :options="options" @select="handleSelect">
-            <button class="transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-200">
-              <SvgIcon icon="ri:more-2-fill" />
-            </button>
-          </NDropdown>
+<!--          <button-->
+<!--            v-if="!inversion"-->
+<!--            class="mb-2 transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-300"-->
+<!--            @click="handleRegenerate"-->
+<!--          >-->
+<!--            <SvgIcon icon="ri:restart-line" />-->
+<!--          </button>-->
+<!--          <NDropdown :placement="!inversion ? 'right' : 'left'" :options="options" @select="handleSelect">-->
+<!--            <button class="transition text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-200">-->
+<!--              <SvgIcon icon="ri:more-2-fill" />-->
+<!--            </button>-->
+<!--          </NDropdown>-->
         </div>
       </div>
     </div>

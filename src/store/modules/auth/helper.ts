@@ -1,15 +1,16 @@
 import { ss } from '@/utils/storage'
 
 const LOCAL_NAME = 'SECRET_TOKEN'
+let _token: string| null
 
 export function getToken() {
-  return ss.get(LOCAL_NAME)
+  return _token
 }
 
 export function setToken(token: string) {
-  return ss.set(LOCAL_NAME, token)
+  return _token = token
 }
 
 export function removeToken() {
-  return ss.remove(LOCAL_NAME)
+  return _token = null
 }

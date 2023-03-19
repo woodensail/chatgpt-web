@@ -40,6 +40,12 @@ export function fetchSession<T>() {
   })
 }
 
+export function fetchSpeakConfig<T>() {
+  return post<T>({
+    url: '/SpeakConfig',
+  })
+}
+
 export function fetchVerify<T>(token: string) {
   return post<T>({
     url: '/verify',

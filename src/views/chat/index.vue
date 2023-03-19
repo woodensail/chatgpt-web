@@ -2,18 +2,22 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { NAutoComplete, NButton, NInput, useDialog, useMessage } from 'naive-ui'
+import { NAutoComplete, NButton, NInput, useDialog, useMessage, NSpin } from 'naive-ui'
 import html2canvas from 'html2canvas'
+import * as sdk from 'microsoft-cognitiveservices-speech-sdk'
+import { ResultReason } from 'microsoft-cognitiveservices-speech-sdk'
 import { Message } from './components'
 import { useScroll } from './hooks/useScroll'
 import { useChat } from './hooks/useChat'
 import { useCopyCode } from './hooks/useCopyCode'
 import { useUsingContext } from './hooks/useUsingContext'
 import HeaderComponent from './components/Header/index.vue'
+import VoiceInputComponent from './components/VoiceInput/index.vue'
 import { HoverButton, SvgIcon } from '@/components/common'
 import { useBasicLayout } from '@/hooks/useBasicLayout'
-import { useChatStore, usePromptStore } from '@/store'
+import {useChatStore, usePromptStore, useSpeakStore} from '@/store'
 import { fetchChatAPIProcess } from '@/api'
+
 import { t } from '@/locales'
 
 let controller = new AbortController()
@@ -40,6 +44,7 @@ const conversationList = computed(() => dataSources.value.filter(item => (!item.
 
 const prompt = ref<string>('')
 const loading = ref<boolean>(false)
+const speaking = ref<boolean>(false)
 
 // 添加PromptStore
 const promptStore = usePromptStore()
@@ -48,6 +53,30 @@ const { promptList: promptTemplate } = storeToRefs<any>(promptStore)
 
 function handleSubmit() {
   onConversation()
+}
+const speechConfig = sdk.SpeechConfig.fromSubscription(import.meta.env.VITE_SPEECH_KEY, import.meta.env.VITE_SPEECH_REGION)
+speechConfig.speechSynthesisVoiceName = 'en-US-JennyNeural'
+speechConfig.speechRecognitionLanguage = 'en-US'
+const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput()
+let recognizer: any
+function voiceInput() {
+  if (speaking.value) {
+    recognizer?.close?.()
+    speaking.value = false
+    return
+  }
+  speaking.value = true
+  recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig)
+  recognizer.recognizeOnceAsync((result: { reason: any; text: string; }) => {
+    if (result.reason === ResultReason.RecognizedSpeech)
+      prompt.value = prompt.value + result.text
+    recognizer.close()
+    speaking.value = false
+  })
+}
+function speakOnce(str: string) {
+  const synthesizer = new sdk.SpeechSynthesizer(speechConfig)
+  synthesizer.speakTextAsync(str)
 }
 
 async function onConversation() {
@@ -99,6 +128,8 @@ async function onConversation() {
 
   try {
     let lastText = ''
+    let spokenText = ''
+    const speaker = new sdk.SpeechSynthesizer(speechConfig)
     const fetchChatAPIOnce = async () => {
       await fetchChatAPIProcess<Chat.ConversationResponse>({
         prompt: message,
@@ -133,6 +164,10 @@ async function onConversation() {
               lastText = data.text
               message = ''
               return fetchChatAPIOnce()
+            }
+            if (data.detail.choices[0].finish_reason === 'stop' || data.text.match(/[.!?,]\s*$/)) {
+              speaker.speakTextAsync(data.text.replace(spokenText, '').trim())
+              spokenText = data.text
             }
 
             scrollToBottom()
@@ -229,6 +264,8 @@ async function onRegenerate(index: number) {
 
   try {
     let lastText = ''
+    let spokenText = ''
+    const speaker = new sdk.SpeechSynthesizer(speechConfig)
     const fetchChatAPIOnce = async () => {
       await fetchChatAPIProcess<Chat.ConversationResponse>({
         prompt: message,
@@ -263,6 +300,10 @@ async function onRegenerate(index: number) {
               lastText = data.text
               message = ''
               return fetchChatAPIOnce()
+            }
+            if (data.detail.choices[0].finish_reason === 'stop' || data.text.match(/[.!?,]\s*$/)) {
+              speaker.speakTextAsync(data.text.replace(spokenText, '').trim())
+              spokenText = data.text
             }
           }
           catch (error) {
@@ -490,6 +531,7 @@ onUnmounted(() => {
                 :loading="item.loading"
                 @regenerate="onRegenerate(index)"
                 @delete="handleDelete(index)"
+                @speak="speakOnce(item.text)"
               />
               <div class="sticky bottom-0 left-0 flex justify-center">
                 <NButton v-if="loading" type="warning" @click="handleStop">
@@ -541,6 +583,14 @@ onUnmounted(() => {
               <span class="dark:text-black">
                 <SvgIcon icon="ri:send-plane-fill" />
               </span>
+            </template>
+          </NButton>
+          <NButton class="!w-[60px]" block @click="voiceInput">
+            <template #icon>
+              <span v-if="!speaking" class="dark:text-black">
+                <SvgIcon icon="mdi:microphone" />
+              </span>
+              <NSpin class="scale-50" v-if="speaking" size="small" />
             </template>
           </NButton>
         </div>

@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { getToken, removeToken, setToken } from './helper'
 import { store } from '@/store'
-import { fetchSession } from '@/api'
 
 interface SessionResponse {
   auth: boolean
@@ -28,9 +27,10 @@ export const useAuthStore = defineStore('auth-store', {
   actions: {
     async getSession() {
       try {
-        const { data } = await fetchSession<SessionResponse>()
-        this.session = { ...data }
-        return Promise.resolve(data)
+        this.session = { auth: true, model: 'ChatGPTAPI' }
+        // await fetchSession<SessionResponse>()
+        this.token = '111'
+        return Promise.resolve(this.session)
       }
       catch (error) {
         return Promise.reject(error)

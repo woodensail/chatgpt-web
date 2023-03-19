@@ -18,29 +18,8 @@ const ms = useMessage()
 const loading = ref(false)
 const token = ref('')
 
-const disabled = computed(() => !token.value.trim() || loading.value)
-
 async function handleVerify() {
-  const secretKey = token.value.trim()
-
-  if (!secretKey)
-    return
-
-  try {
-    loading.value = true
-    await fetchVerify(secretKey)
-    authStore.setToken(secretKey)
-    ms.success('success')
-    window.location.reload()
-  }
-  catch (error: any) {
-    ms.error(error.message ?? 'error')
-    authStore.removeToken()
-    token.value = ''
-  }
-  finally {
-    loading.value = false
-  }
+  console.log('跳登录')
 }
 
 function handlePress(event: KeyboardEvent) {
@@ -64,11 +43,9 @@ function handlePress(event: KeyboardEvent) {
           </p>
           <Icon403 class="w-[200px] m-auto" />
         </header>
-        <NInput v-model:value="token" type="password" placeholder="" @keypress="handlePress" />
         <NButton
           block
           type="primary"
-          :disabled="disabled"
           :loading="loading"
           @click="handleVerify"
         >
